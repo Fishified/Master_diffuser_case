@@ -1,0 +1,276 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  4.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      phaseProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+/*
+The first entry is to define the two phases to be solved, air and water. The 
+names used here must be the same as those used to identify the quantities being 
+solved in the O.orig file. For example, U.air and U.water or alpha.air and 
+alpha.water.
+*/
+ 
+phases (air water);
+
+/*
+The next two entries are to define the type of diameter model for each 
+phase. In this tutorial we principally concerned with modeling
+air bubbles (dispersed phase) within water (continous phase), sometimes a phase
+inversion can occur where the expected disperse phase becomes the continous phase.
+In such a case, a diameter is required for the continous phase (i.e. diameter 
+of the water droplets that might shoot out of the free surface).  
+
+The user has the choice of three diameter models: isothermal, constant and 
+the interfacial area transport equation (IATE). The isothermal model modifies 
+the diameter depending on the local continous phase fluid pressure which takes a 
+reference diameter (d0) at a given reference pressure (p0), if the pressure 
+changes, then the bubble size will vary isothermally (it will either grow or 
+shink without any energy exhange with the surrounding fluid). The constant
+diameter model takes only a constant diameter (d). Information can be found on
+the IATE diameter model in a paper referenced in the diameterModels folder of 
+the twoPhaseEulerFoam solver code. 
+
+The residualAlpha is the minimum value of the dispersed phase within a 
+nearly pure continous phase. Because two momentum equations are solved for
+each phase, when alpha for one phase goes to zero, its momentum equation
+also goes to zero. This can cause numerical instabilities. To avoid this, 
+a residualAlpha is specified, ensuring at least a minimum of 
+that phase is in the mixutre so the solution can advance (see Henrick Rusche's 
+thesis from 2002 on page 108). Below, the isothermal diameter model is specified
+for the air phase, whereas the constant diameter model is used for the water 
+phase. Physically it is likely reasonable to use a constant diameter model in 
+this simulation because the variation of pressure is so small, however it is 
+specified as isothermal just to demonstrate the implementation of the isothermal 
+model. 
+*/
+
+air
+{
+    diameterModel   isothermal; //accounts for isothermal expansion
+    isothermalCoeffs
+    {
+        d0              3e-3;//reference diameter for isothermal expansion
+        p0              1e5; //reference pressure for isothermal expansion
+    }
+
+    residualAlpha   1e-6;
+}
+
+water
+{
+    diameterModel   constant;
+    constantCoeffs
+    {
+        d               1e-4;
+    }
+
+    residualAlpha   1e-6;
+}
+
+/*
+The blending entry defines the threshold phase fractions for deciding which 
+phase is dispersed and which phase is continuous. For example, if a cell has 
+alpha.air greater than 0.3, than it is no longer considered to be fully 
+dispersed but rather it is considered partially dispersed (i.e. the bubbles are
+too highly concentrated to be considered fully dispersed). 
+
+In the definition of the interfacial force models that follow (e.g. 
+drag, lift, virtual mass), different model types can be specified to be used 
+depending on which phase is continous or dispersed. The model type used will 
+depend on the phase fractions in the cell. 
+
+For example, if the phase fraction of air is such that it can be considered 
+fully dispersed (air in water), than the model defined under the (air in water)
+keyword is used. If the phase fraction for air falls between 0.3 and 0.5, then 
+the flow is considered partially dispersed and neither phase can be easily 
+distinguished from the other. In this case, the model type defined under the 
+(air and water) keyword is used. The key difference is to notice the "in" and 
+"and" between air and water in these definitions.
+
+OpenFOAM requires knowledge from the user as to what the thresholds are in order
+to distinguish which phase is continous and which phase is dispersed in each 
+cell. The blending entries do this.
+
+The blending type linear, linearily blends the effects of the three models
+when the phases are partially dispersed and a (air and water) keyword is not 
+defined.
+*/
+
+blending
+{
+    default
+    {
+        type                       linear; 
+        maxFullyDispersedAlpha.air    0.3; //Max alpha.air fully dispersed
+        maxPartlyDispersedAlpha.air   0.5; //Max alpha.air partially dispersed
+        maxFullyDispersedAlpha.water  0.3; //Max alpha.air fully dispersed
+        maxPartlyDispersedAlpha.water 0.5; //Max alpha.air partially dispersed
+    }
+}
+
+/*
+sigma is the surface tension between air and water and is used in a few
+drag force models.
+*/
+sigma
+(
+    (air and water)     0.0728
+);
+
+/*
+Definition for aspect ratio models to use. Here we assume a constant aspect
+ratio (E0) of 1, or a perfect sphere.  
+*/
+aspectRatio
+(
+    (air in water)
+    {
+        type            constant;
+        E0              1.0;
+    }
+
+    (water in air)
+    {
+        type            constant;
+        E0              1.0;
+    }
+);
+
+
+/*
+The ShillerNaumann drag model is simple and reliable for use with bubbly air-water 
+flows, it is used here, however there are many more options available. The 
+variuos drag models are actually used to determine the value of Cd 
+for use in the drag equation (Fd=0.5rhoACdV**2) which determines the amount of 
+interfacial momentum transfer caused by hydrodynamic drag. The ShillerNaumann 
+model depends on the bubble's Reynolds Number 
+(Re=(rho_continous*|U_rel|*d0)/mu_continous), 
+a residualRe is used to prevent numerical instabilities where Re for a given 
+phase in certain cells might at some point during the simulation be zero.
+*/
+drag
+(
+    (air in water)
+    {
+        type            SchillerNaumann;
+        residualRe      1e-3;
+        swarmCorrection //corrects for swarm effects of dense rising bubble swarms
+        {
+            type        none;
+        }
+    }
+
+    (water in air)
+    {
+        type            SchillerNaumann;
+        residualRe      1e-3;
+        swarmCorrection
+        {
+            type        none;
+        }
+    }
+
+    (air and water)
+    {
+        type            segregated;
+        m               0.5;
+        n               8;
+        swarmCorrection
+        {
+            type        none;
+        }
+    }
+);
+
+/*
+Here we define a constantCoefficient for the virtualMass interfacial force term.
+In the literature a constant value of Cvm of 0.5 is usually taken. The validity
+of this assumption is debatable. 
+*/
+virtualMass
+(
+    (air in water)
+    {
+        type            constantCoefficient;
+        Cvm             0.5;
+    }
+
+    (water in air)
+    {
+        type            constantCoefficient;
+        Cvm             0.5;
+    }
+);
+
+/*
+Heat transfer between phases is not of interest in this tutorial. If it was, 
+however, this is where the heat transfer coefficient models would be specified. 
+*/
+heatTransfer
+(
+    (air in water)
+    {
+        type            RanzMarshall;
+        residualAlpha   1e-4;
+    }
+
+    (water in air)
+    {
+        type            RanzMarshall;
+        residualAlpha   1e-4;
+    }
+);
+
+
+/*
+This is where the lateral lift coefficient model is specified. Here it is left
+commented out. Similar to the virtual mass coefficient, the literature often
+takes Cl to be a constant 0.5.
+*/
+
+lift
+(
+	/*
+	(air in water)
+	{
+		type constantCoefficient;
+		Cl 0.5;
+	}
+	*/
+);
+
+wallLubrication
+(
+);
+
+/*
+This is where the turbulent dispersion force coefficient model is defined.
+Usually Ctd is taken to be 0.5. 
+*/
+turbulentDispersion
+(
+	/*(air in water)
+	{
+		type constantCoefficient;
+		Ctd 0.5;
+	}
+	*/
+);
+
+// Minimum allowable pressure
+pMin            10000;
+
+
+// ************************************************************************* //

@@ -1,0 +1,101 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  4.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 1;
+
+xMin   0.0; 
+xMax   0.4;
+
+yMin   0.0; 
+yMax 0.205; 
+
+zMin     0;  
+zMax   0.25;
+
+cellsize 0.010; //enter desired cell size
+
+// number of cells in each direction
+nbDirX       #calc "floor((($xMax)-($xMin))/$cellsize)";
+nbDirY       #calc "floor((($yMax)-($yMin))/$cellsize)";
+nbDirZ       #calc "floor((($zMax)-($zMin))/$cellsize)";
+
+
+vertices
+(
+  //bottom plane
+ ($xMin  $yMin   $zMin    ) //vertice 0 - near bottom left (origin)
+ ($xMax  $yMin   $zMin    ) //vertice 1 - near bottom right
+ ($xMax  $yMax   $zMin    ) //vertice 2 - far bottom right
+ ($xMin  $yMax   $zMin    ) //vertice 3 - far bottom left
+ 
+ //top plane
+ ($xMin  $yMin   $zMax    ) //vertice 4 - near top left
+ ($xMax  $yMin   $zMax    ) //vertice 5 - near top right
+ ($xMax  $yMax   $zMax    ) //vertice 6 - far top right
+ ($xMin  $yMax   $zMax    ) //vertice 7 - far top left
+);
+
+blocks
+(
+ hex (0 1 2 3 4 5 6 7) ($nbDirX $nbDirY $nbDirZ) simpleGrading (1 1 1)
+);
+
+edges
+(
+);
+
+patches
+(
+	patch outlet
+    (
+        (4 5 6 7)
+    )   
+	wall wall_bottom
+    (
+        (0 3 2 1)
+    )
+    wall wall_near
+    (
+        (0 1 5 4)
+    )
+    wall wall_far
+    (
+        (3 7 6 2)
+    )
+    wall wall_left
+    (
+        (0 4 7 3)
+    )	
+    wall wall_right
+    (
+        (2 6 5 1)
+    )	
+	
+	/*wall walls
+   (
+        (0 3 2 1)
+		(0 1 5 4)
+		(3 7 6 2)
+		(0 4 7 3)
+		(2 6 5 1)
+    )	*/
+);
+
+mergePatchPairs
+(
+);
+
+// ************************************************************************* //

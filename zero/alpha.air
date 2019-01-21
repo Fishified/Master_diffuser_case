@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  4.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      alpha.air;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+/*
+This file is used to specify the boundary conditions and intitial conditions of 
+alpha.air. The internalField is where the intial conditions will be placed after
+the setFields command is run to place an initial water level in the tank.
+*/
+
+dimensions      [0 0 0 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+	/*
+	The inlet entry is for the boundary condition for the top of the air
+	diffuser. 
+	*/
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 1;
+    }
+    outlet
+    {
+	/*boundary type inletOutlet is a mixed boundary type that uses a 
+	zeroGradient condition when flow is directed out of the domain and a 
+	fixedValue condition when flow is directed into the domain. So in this
+	tutorial, specifiying inletOutlet allows water to be ejected out of the
+	top of the tank, but only let air come back in. The inletValue specifies
+	phase fraction coming back in (e.g. 1, pure air). The 'value' entry, is
+	used as the initial condition at the first time step.
+	*/
+        type            inletOutlet;
+        phi             phi.air;
+        inletValue      uniform 1;
+        value           uniform 1;
+    }
+	
+	/*
+	For the walls, the phase fraction is identical to that contained within the 
+	boundary cell. This is not strictly physical because the wall are made of
+	glass, not air or water.
+	
+	*/
+    "wall_.*"
+    {
+        type            zeroGradient;
+    }
+}
+
+// ************************************************************************* //
