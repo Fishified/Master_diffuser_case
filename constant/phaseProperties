@@ -58,11 +58,10 @@ model.
 
 air
 {
-    diameterModel   isothermal; //accounts for isothermal expansion
-    isothermalCoeffs
+    diameterModel   constant; //accounts for isothermal expansion
+    constantCoeffs
     {
-        d0              3e-3;//reference diameter for isothermal expansion
-        p0              1e5; //reference pressure for isothermal expansion
+        d              3.55e-3;//reference diameter for isothermal expansion
     }
 
     residualAlpha   1e-6;
@@ -164,17 +163,18 @@ drag
 (
     (air in water)
     {
-        type            SchillerNaumann;
+        type            IshiiZuber; //SchillerNaumann;
         residualRe      1e-3;
-        swarmCorrection //corrects for swarm effects of dense rising bubble swarms
+        swarmCorrection             //corrects for swarm effects of dense rising bubble swarms
         {
-            type        none;
+            type        Tomiyama;//none;
+            l               1.75;
         }
     }
 
     (water in air)
     {
-        type            SchillerNaumann;
+        type            IshiiZuber; //SchillerNaumann;
         residualRe      1e-3;
         swarmCorrection
         {
@@ -242,13 +242,13 @@ takes Cl to be a constant 0.5.
 
 lift
 (
-	/*
+
 	(air in water)
 	{
 		type constantCoefficient;
 		Cl 0.5;
 	}
-	*/
+
 );
 
 wallLubrication
@@ -261,12 +261,11 @@ Usually Ctd is taken to be 0.5.
 */
 turbulentDispersion
 (
-	/*(air in water)
+	(air in water)
 	{
 		type constantCoefficient;
 		Ctd 0.5;
 	}
-	*/
 );
 
 // Minimum allowable pressure
