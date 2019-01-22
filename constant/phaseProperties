@@ -15,6 +15,10 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+
+/* These are some new explanations
+*/
+
 /*
 The first entry is to define the two phases to be solved, air and water. The 
 names used here must be the same as those used to identify the quantities being 
