@@ -1,4 +1,7 @@
-*.log
+log
 /VTK/*
 /dynamicCode/*
 /constant/polyMesh/*
+/processor*/*
+/postProcessing/*
+/0/*
