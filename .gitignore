@@ -1,0 +1,4 @@
+*.log
+/VTK/*
+/dynamicCode/*
+/constant/polyMesh/*
