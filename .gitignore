@@ -5,3 +5,4 @@ log
 /processor*/*
 /postProcessing/*
 /0/*
+/0.*/*
