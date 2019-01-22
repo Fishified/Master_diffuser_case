@@ -76,11 +76,11 @@ castellatedMeshControls
 
     refinementRegions
     {
-       /*interior
+       interior
        {
          mode inside;
-         levels ((0 0));
-       }*/  
+         levels ((2 2));
+       }  
 	   
        /*swarm
        {
