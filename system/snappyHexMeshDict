@@ -34,8 +34,8 @@ the viscous sublayer of the boundary profile. The features of the addLayers
 feature will be the topic of a future tutorial. 
 */
 
-castellatedMesh $makeMesh;
-snap            $makeMesh;
+castellatedMesh true;
+snap            true;
 addLayers       false;
 
 /*
