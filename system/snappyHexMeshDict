@@ -14,9 +14,71 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-castellatedMesh true;
-snap            true;
+#include "../caseParameters" 
+/*
+---global controls---
+
+snappyHexMeshDict is divided into three parts: castellatedMesh, snap
+and addLayers. Details about what each of these three parts does 
+can be found online on the OpenFOAM.org website. Here I will focus more on how 
+to properly fill out the entries and explain how the various parts link 
+together. Upon sending the snappyHexMesh command, each of the three parts are 
+run one after the other in the order --> castellatedMesh, snap and then
+addLayers if it is turned on. In this tutorial, we will not be using layers so 
+it is turned off with the word false.
+
+Though not treated here, the addLayers function can be used to insert thin
+boundary cells near surfaces, which can be especially useful for running low
+Reynolds turbulence models requiring the first cell layer to be placed within
+the viscous sublayer of the boundary profile. The features of the addLayers 
+feature will be the topic of a future tutorial. 
+*/
+
+castellatedMesh $makeMesh;
+snap            $makeMesh;
 addLayers       false;
+
+/*
+---geometry list---
+
+The geometry list below is where you define the various geometry files used in
+a simulation. The geometry files are stored in the /constant/triSurface 
+directory. The snappyHexMesh utility can accept stereolithography files output 
+from a CAD program, or if the geometry is simple, you can use OpenFOAM geometry
+bounding entities (an example of which is commented out below) to define your
+geometry. In this tutorial we are going to use an .stl file drawn in a CAD
+program to define the diffuser.
+
+The name you choose for the .stl file is also the name used to refer to 
+that piece of geometry in the refinementSurfaces and refinementRegions lists 
+below. Also, after snappyHexMesh has run, you will see new additions 
+to the /constant/polyMesh/boundary file with the names you used to refer to your
+various geometries. Before running the simulation, you will also have to specify
+the type of boundary condition attributed to each geometry with an entry 
+refering to its name in each of your initial condition files in the 0.orig 
+directory (e.g. 0.orig/U, 0.orig/p, 0.orig/k, etc.). 
+
+Since the base mesh we created with blockMesh defines the six sides of the tank,
+we only need to mesh in the geometry for the diffuser (diffuser.stl). I decided
+to call the diffuser with wall_ as a prefix. There is an important reason for
+this - the wall_ prefix allows us to easily specify all boundaries of type wall
+using the * wildcard (e.g. wall_*) in each of the initial condition files in the 
+0.orig file. This keeps things clean and clear and helps avoid entry errors. Of 
+course this is only suggested if you intend to apply the same boundary 
+conditions to all of the boundaries that are grouped with wall_. Also know that a 
+similar naming convention could be used for any grouping of geometries using 
+identical boundary conditions. If the reason for using wall_ is not clear, 
+the post on boundary conditions later in the tutorial should help. 
+
+In this tutorial, the sides and bottom of the tank are all boundaries of type 
+wall, and we want most of the sides of the diffuser to be of type wall as well. 
+The only exceptions are the top of the diffuser, from where the bubbles will 
+rise and the top of tank from which we want air to escape. For now, however, 
+we will define all five exposed sides of the diffuser as type wall (the bottom 
+of the diffuser is left out) and then redefine the boundary of the top of the 
+diffuser using a combination of the setSet and createPatch utilities. The top
+of the tank was defined as a type patch in blockMeshDict.
+*/
 
 geometry
 {
@@ -24,23 +86,52 @@ geometry
     {
       type        triSurfaceMesh;
 	  name        wall_diffuser;
+		
     }
 	
     interior
     {
       type searchableBox;
-      min ( -0.005 -0.005 -0.005); 
-      max ( 0.405 0.21 0.305 );
+      min ( 0.045 0.010 0.010); 
+      max ( 0.390 0.195 0.30 );
     }
 	
-    /*swarm
+    swarm
     {
       type searchableBox;
       min ( 0.01 0.010 0.045); 
       max ( 0.045 0.200 0.30 );
-    }*/
+    }
 	
+    /*freeSurface
+    {
+      type searchableBox;
+      min ( 0     0     0.180); 
+      max ( 0.40  0.205 0.220);
+    }*/	
+	
+	//example of a geometric entity to define a geometry
+	/*wall_diffuser                  // User defined region name 
+    { 
+        type   searchableBox;        // define a bounding box 
+        min    (0.005 -0.073 0);     // position of min point
+        max    (0.040 0.073 0.035);  // position of max point
+    }*/ 
 };
+
+/*
+The castellatedMeshControls sections contains parameters for controlling the 
+number of computational cells in the domain and the various levels of mesh
+refinement. From the OpenFOAM user guide, maxLocalCells seems to limit the
+number of cells per processor if you run snappyHexMesh in parallel. The 
+maxGlobalCells parameter limits the overall cell number during refinement. I
+would presume maxLoadUnbalance has to do with running snappyHexMesh in parallel.
+The maxLoadUnbalance is likely the maximum proportion of excess cells per 
+processor expressed as a fraction of a perfectly balanced load (i.e., a thousand 
+extra cells when a perfect balance would mean 10000 cells per processor, would 
+be a maxLoadUnbalance of 0.1). The nCellsBetweenLevels parameters defines the
+number of buffer cells between each cell refinement level. 
+*/
 
 castellatedMeshControls
 {
@@ -50,6 +141,9 @@ castellatedMeshControls
     maxLoadUnbalance 0.10;
     nCellsBetweenLevels 2;
 
+	/* The features entry takes the file produced by the extractFeatures utility
+	as its input. The level variable lets snappyHexMesh what level of refinement 
+	you want cells touching the features to have.*/
     features 
     (
 	  { 
@@ -58,12 +152,24 @@ castellatedMeshControls
       }
 	);
 
+	/*In refinementSurfaces we can control the level of refinement in the 
+	vicinity of the wall_diffuser geometry specified above. We first refer to the
+	name of the surface to be refined (i.e., wall_diffuser), the next entry is
+	the level list. The first entry defines the minimum level used across the
+	entire geometry, whereas the second number defines the level of refinement
+	desired when the geometrie's angles exceed the resolveFeatureAngle.
+	
+	The patchInfo entry is used to define the type of boundary you wish to use
+	for the refinementSurface. Type wall or patch. Type wall requires a wall
+	function to be defined in the 0 folder boundary files, whereas type 'patch' 
+	requires a boundary condition to be specified in the boundary files. 
+	*/
 	
     refinementSurfaces
     {
         wall_diffuser
         {
-	     level (2 2);      
+	     level (1 1);      //increase to (1 2) to get 1.25 mm around the diffuser
 		 		patchInfo
             {
                 type wall; //or you could also use 'patch' to define a boundary
@@ -73,27 +179,49 @@ castellatedMeshControls
 
     resolveFeatureAngle 10;
 
+	/*The refinementRegions entry is where you can refine specific regions of 
+	the domain under study. Each of the two regions, bubbleColumn and 
+	freeSurface were defined above in the geometry list. Here we specify whether
+	we want the inside or the outside of the geometry to be refined. The levels
+	entries let snappy know the minimum and maximum refinement levels to use.*/
 
     refinementRegions
     {
        interior
        {
          mode inside;
-         levels ((2 2));
+         levels ((1 1));
        }  
 	   
-       /*swarm
+       swarm
        {
          mode inside;
          levels ((1 1));
-       }*/
+       } 
 	   
+	   /*freeSurface
+       {
+         mode inside;
+         levels ((0 $refinementLevel));
+       } */
     }
 
+	/*The locationInMesh entry defines which part of the mesh to keep. A point 
+	inside the .stl file will mean the inside of the stl file will be meshed. A 
+	point outside the .stl means the rest of the domain excluding the stl will 
+	be mesh. 
+	*/
+	
     locationInMesh (0.2 0.1025 0.1025);
     allowFreeStandingZoneFaces true;
 }
 
+/*
+Please see OpenFOAM user manual for help with these: 
+https://cfd.direct/openfoam/user-guide/v6-snappyHexMesh/#dx26-154007
+. For the most part they are advanced parameters that can be modified if need be
+in future simulations.
+*/
 
 snapControls
 {
@@ -104,6 +232,10 @@ snapControls
     nFeatureSnapIter 10;
 }
 
+/*Since we are not adding layers in this tutorial, please see the OpenFOAM user 
+manual for help with these: 
+https://cfd.direct/openfoam/user-guide/v6-snappyHexMesh/#dx26-154007
+*/
 
 addLayersControls
 {
@@ -127,6 +259,11 @@ addLayersControls
     nLayerIter 50;
 }
 
+/*
+See OpenFOAM user guide for more detail. In this tutorial, the values are
+left at default values. Again most of these are for advanced control of the 
+mesh that is not needed in this tutorial.
+*/
 
 meshQualityControls
 {

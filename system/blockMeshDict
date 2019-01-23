@@ -14,7 +14,21 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+/*
+Using a scaling factor (convertToMeters value) of 1 means that all the values 
+listed below for xMin, xMax etc. are in meters. If you desire to write xMin, 
+xMax etc. in millimeters, you would use a convertToMeters factor equal to 0.001. 
+blockMesh uses the scaling factor to convert your units into meters. 
+*/
+
 convertToMeters 1;
+
+/*
+The following lines define the extents of the computational domain. Using 
+OpenFOAM's dynamic input capability, the number of cells in each direction are 
+recalculated everytime blockmesh is run. This allows a new domain to be easily 
+defined without having to replace the vertices' definitions each time.
+*/
 
 xMin   0.0; 
 xMax   0.4;
@@ -25,13 +39,19 @@ yMax 0.205;
 zMin     0;  
 zMax   0.25;
 
-cellsize 0.010; //enter desired cell size
+cellsize 0.005; //enter desired cell size
 
 // number of cells in each direction
 nbDirX       #calc "floor((($xMax)-($xMin))/$cellsize)";
 nbDirY       #calc "floor((($yMax)-($yMin))/$cellsize)";
 nbDirZ       #calc "floor((($zMax)-($zMin))/$cellsize)";
 
+/* 
+The vertices list contains point coordinates with reference to the xMin, xMax
+variables defined above to position the four corners of the aquarium. Near in 
+the comments refers to zero in the y, far to 0.205 m in the y. Bottom refers to 
+zero in the z, top to 0.3 m. 
+*/
 
 vertices
 (
@@ -48,14 +68,60 @@ vertices
  ($xMin  $yMax   $zMax    ) //vertice 7 - far top left
 );
 
+/*
+This simulation only has one block which will be defined by the eight 
+points in the vertices list above. In the second entry of the blocks list below, 
+the positve x direction is defined by the first two elements in the ordered 
+list. The first element is the origin and the second element is the vertice 
+lying in the positive x axis. In a similar way, the positive y axis is defined 
+by the third and fourth elements in the ordered list.
+
+The number of cells in each direction are given in the third entry in the blocks 
+list (parenthesis after list of vertex numbers). In our case, the values of 
+the variables nbDirX, nbDirY and nbDirZ will change depending on what the user 
+desires for xMin, xMax, cellsize and so on. 
+
+simpleGrading with values of 1 1 1, means that the cell size is constant 
+throughout the domain. Basically, we will get a 3D rectangular domain composed 
+of identically sized cells all orthogonal to each other. But remember, this will
+produce only the base mesh necessary for the snappyHexMesh utility. Further mesh
+refinements will be done with the snappyHexMesh utility.
+*/
+
 blocks
 (
  hex (0 1 2 3 4 5 6 7) ($nbDirX $nbDirY $nbDirZ) simpleGrading (1 1 1)
 );
 
+/*
+Since we have no curved edges, the edges list is left empty.
+*/
 edges
 (
 );
+
+/*
+The patches list contains sublists used to define the six boundaries of the 
+computational domain. Each sublist is identified by a keyword (e.g. wall_near) 
+and each sublist contains the vertices used to define the patch. 
+
+The order of the vertices often causes confusion. A trick is to imagine your 
+in the block looking out, then pick any vertice to start and write its number
+as the first element in the list. From this vertice, move along the edge of the 
+patch in a clockwise direction and add each point you come across to the list 
+in the order they appear until you have all four. 
+
+Since there are six sides to the block there is a seperate sublist for each.
+Keeping each entry seperate, provides more flexibilty in how the boundaries
+are treated. This can be advantageous in certain simulations where a variety of
+boundary conditions are expected. Alternatively, if you expect numerous
+boundaries to be of type 'wall' with an identical boundary type, then grouping 
+all these boundaries together will help keep things clean, especially when it 
+comes to specifying the boundary conditions. Bondary conditions will be treated 
+in detail later on.  
+
+I left a commented example of a group of boundaries below.   
+*/
 
 patches
 (
