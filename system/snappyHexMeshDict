@@ -29,8 +29,8 @@ geometry
     interior
     {
       type searchableBox;
-      min ( -0.005 -0.005 -0.005); 
-      max ( 0.405 0.21 0.305 );
+      min ( 0.005 0.005 0.005); 
+      max ( 0.395 0.2 0.305 );
     }
 	
 };
