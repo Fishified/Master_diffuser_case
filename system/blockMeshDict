@@ -25,7 +25,7 @@ yMax 0.205;
 zMin     0;  
 zMax   0.25;
 
-cellsize 0.010; //enter desired cell size
+cellsize 0.005; //enter desired cell size
 
 // number of cells in each direction
 nbDirX       #calc "floor((($xMax)-($xMin))/$cellsize)";

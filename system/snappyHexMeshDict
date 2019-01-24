@@ -33,13 +33,6 @@ geometry
       max ( 0.405 0.21 0.305 );
     }
 	
-    /*swarm
-    {
-      type searchableBox;
-      min ( 0.01 0.010 0.045); 
-      max ( 0.045 0.200 0.30 );
-    }*/
-	
 };
 
 castellatedMeshControls
@@ -63,7 +56,7 @@ castellatedMeshControls
     {
         wall_diffuser
         {
-	     level (2 2);      
+	     level (1 1);      
 		 		patchInfo
             {
                 type wall; //or you could also use 'patch' to define a boundary
@@ -79,14 +72,8 @@ castellatedMeshControls
        interior
        {
          mode inside;
-         levels ((2 2));
-       }  
-	   
-       /*swarm
-       {
-         mode inside;
          levels ((1 1));
-       }*/
+       }  
 	   
     }
 
