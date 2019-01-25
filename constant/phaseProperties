@@ -65,7 +65,7 @@ air
     diameterModel   constant; //accounts for isothermal expansion
     constantCoeffs
     {
-        d              3.55e-3;//reference diameter for isothermal expansion
+        d              4.55e-3;//reference diameter for isothermal expansion
     }
 
     residualAlpha   1e-6;
