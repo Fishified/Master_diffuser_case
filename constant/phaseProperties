@@ -171,8 +171,8 @@ drag
         residualRe      1e-3;
         swarmCorrection             //corrects for swarm effects of dense rising bubble swarms
         {
-            type        none;
-            //l               1.75;
+            type        Tomiyama;
+            l               1.75;
         }
     }
 
