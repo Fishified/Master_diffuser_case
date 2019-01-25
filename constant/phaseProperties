@@ -171,8 +171,8 @@ drag
         residualRe      1e-3;
         swarmCorrection             //corrects for swarm effects of dense rising bubble swarms
         {
-            type        Tomiyama;//none;
-            l               1.75;
+            type        none;
+            //l               1.75;
         }
     }
 
@@ -247,11 +247,11 @@ takes Cl to be a constant 0.5.
 lift
 (
 
-	(air in water)
+	/*(air in water)
 	{
 		type constantCoefficient;
 		Cl 0.5;
-	}
+	}*/
 
 );
 
