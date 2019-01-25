@@ -4,7 +4,7 @@
 refinementLevel 0; //setting zero removes refinement
 
 //solving
-inletVelocity 0.0657; //0.0446 //0.0227
+inletVelocity 0.0446; // //0.0227
 
 //time averaging
 startTime 0;
